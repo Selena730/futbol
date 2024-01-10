@@ -25,6 +25,6 @@ This is our first draft of the [DTR](https://docs.google.com/document/d/1m_vG66O
 
 ## Contributors
 
-Selena : [GitHub](https://github.com/Selena730) profile. [LinkedIn](https://www.linkedin.com/in/selena-hawamdeh-66722b239/) profile.
-Luis : [GitHub](https://github.com/LuisAparicio12) profile. [LinkedIn](https://www.linkedin.com/in/luis-aparicio-319a19261/) profile.
-Jess : [GitHub](https://github.com/kohljd?tab=overview&from=2024-01-01&to=2024-01-09) profile. [LinkedIn](https://www.linkedin.com/in/jessica-kohl-545785113/) profile.
+- Selena : [GitHub](https://github.com/Selena730) profile. [LinkedIn](https://www.linkedin.com/in/selena-hawamdeh-66722b239/) profile.
+- Luis : [GitHub](https://github.com/LuisAparicio12) profile. [LinkedIn](https://www.linkedin.com/in/luis-aparicio-319a19261/) profile.
+- Jess : [GitHub](https://github.com/kohljd?tab=overview&from=2024-01-01&to=2024-01-09) profile. [LinkedIn](https://www.linkedin.com/in/jessica-kohl-545785113/) profile.
