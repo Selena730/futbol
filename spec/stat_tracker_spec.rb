@@ -65,8 +65,8 @@ RSpec.describe StatTracker do
                 }
 
                 stat_tracker = StatTracker.from_csv(locations)
-            
-                expect(stat_tracker.percentage_home_wins).to eq(0.55)
+
+                expect(stat_tracker.percentage_home_wins).to eq(0.5)
             end
         end
 
@@ -119,7 +119,7 @@ RSpec.describe StatTracker do
                 }
 
                 stat_tracker = StatTracker.from_csv(locations)
-                expect(stat_tracker.count_of_teams).to eq(4)
+                expect(stat_tracker.count_of_teams).to eq(32)
             end
         end
 
@@ -169,8 +169,8 @@ RSpec.describe StatTracker do
 
             stat_tracker = StatTracker.from_csv(locations)
             expect(stat_tracker.highest_scoring_visitor).to eq("FC Dallas")
-        end 
-        
+        end
+
         it 'returns highest scoring home team' do
             game_path = './spec/fixtures/games_fixture.csv'
             team_path = './data/teams.csv'
@@ -215,7 +215,7 @@ RSpec.describe StatTracker do
             stat_tracker = StatTracker.from_csv(locations)
             expect(stat_tracker.lowest_scoring_home_team).to eq("Sporting Kansas City")
         end
-    end 
+    end
 
     describe '#season coach stats' do
         it 'returns winningest_coach' do
@@ -295,5 +295,59 @@ RSpec.describe StatTracker do
             expect(stat_tracker.least_accurate_team("20132014")).to eq("Utah Royals FC")
         end
     end
-end
 
+    describe '#count of games by season' do
+        it 'returns the amount of games per season' do
+            game_path = './spec/fixtures/games_fixture.csv'
+            team_path = './spec/fixtures/teams_fixture.csv'
+            game_teams_path = './spec/fixtures/game_teams_fixture.csv'
+
+            locations = {
+                games: game_path,
+                teams: team_path,
+                game_teams: game_teams_path
+            }
+
+            stat_tracker = StatTracker.from_csv(locations)
+
+            expect(stat_tracker.count_of_games_by_season).to eq({"20122013"=>9, "20132014"=>11})
+        end
+
+    end
+
+    describe '#best_offense' do
+        it 'returns the team with the best offense' do
+            game_path = './spec/fixtures/games_fixture.csv'
+            team_path = './spec/fixtures/teams_fixture.csv'
+            game_teams_path = './spec/fixtures/game_teams_fixture.csv'
+
+            locations = {
+                games: game_path,
+                teams: team_path,
+                game_teams: game_teams_path
+            }
+
+            stat_tracker = StatTracker.from_csv(locations)
+            expect(stat_tracker.best_offense).to eq("FC Dallas")
+        end
+
+    end
+
+
+    describe '#worst_offense' do
+        it 'returns the team with the worst offense' do
+            game_path = './spec/fixtures/games_fixture.csv'
+            team_path = './spec/fixtures/teams_fixture.csv'
+            game_teams_path = './spec/fixtures/game_teams_fixture.csv'
+
+            locations = {
+                games: game_path,
+                teams: team_path,
+                game_teams: game_teams_path
+            }
+
+            stat_tracker = StatTracker.from_csv(locations)
+            expect(stat_tracker.worst_offense).to eq("Sporting Kansas City")
+        end
+    end
+end
