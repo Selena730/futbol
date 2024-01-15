@@ -75,9 +75,8 @@ class StatTracker
     def lowest_total_score
         @games.map {|game| game.total_score}.min
     end
-    
-    def percentage_home_wins
 
+    def percentage_home_wins
         total_home_wins = @games.count do |game|
             game.home_goals > game.away_goals
         end
@@ -86,7 +85,6 @@ class StatTracker
     end
 
     def percentage_visitor_wins
-
         total_home_wins = @games.count do |game|
             game.home_goals < game.away_goals
         end
@@ -100,36 +98,109 @@ class StatTracker
         (total_ties.to_f / @games.size).round(2)
     end
 
-    def average_goals_per_game
+    def count_of_games_by_season
+        season_counts = Hash.new(0)
+        @games.each do |game|
+            season = game.season
+            season_counts[season] += 1
+
+        end
+        season_counts
+    end
+
+      def average_goals_per_game
         @games.map! {|game| game.total_score}
         (@games.sum.to_f / @games.size.to_f).round(2)
     end
 
     def average_goals_per_season
         games_by_season = @games.group_by {|game| game.season}
-        games_by_season.each_value do |games| 
+        games_by_season.each_value do |games|
             games.map! do |game|
                 game.total_score
             end
         end
-        games_by_season.each do |season, game_total_score| 
+        games_by_season.each do |season, game_total_score|
             games_by_season[season] = (game_total_score.sum.to_f / game_total_score.size.to_f).round(2)
         end
     end
-
+  
     def count_of_teams
         @teams.map do |team|
             team.team_id
         end.uniq.count
     end
 
+    def best_offense
+        # Get sorted goals
+        teams = sort_goal_stats
+
+        best_offense_id = get_id_with_average(teams, :average, true)
+
+        best_team = @teams.find { |team| team.team_id == best_offense_id }
+        best_team.team_name
+    end
+
+    def worst_offense
+        # Get sorted goals
+        teams = sort_goal_stats
+
+        worst_offense_id = get_id_with_average(teams, :average, false)
+
+        worst_team = @teams.find { |team| team.team_id == worst_offense_id }
+        worst_team.team_name
+    end
+
+    # Gets id of team with min/max average from array sorted by sort_goal_stats
+    def get_id_with_average(array, key, max)
+        team = max ? array.max_by { |item| item[key] } : array.min_by { |item| item[key] }
+        team[:id]
+    end
+
+    def sort_goal_stats
+        teams = []
+
+        # Sort the data => {:id=>"3", :goals=>8, :number_of_games=>5, :average=>1.6}
+
+        @game_teams.each do |game_team|
+            team_id = game_team.team_id
+            goals = game_team.goals.to_i
+
+            if (team_id == nil)
+                next
+            end
+
+            # Find team with same ID if exists otherwise default object shape
+            current_team = teams.find { |team| team[:id] == team_id } || { id: team_id, goals: 0, number_of_games: 0 }
+
+            current_team[:goals] += goals
+            current_team[:number_of_games] += 1
+
+            # Find index of current_team in teams
+            current_team_index = teams.index { |team| team[:id] == team_id }
+
+            # Update existing team or append new team
+            current_team_index ? teams[current_team_index] = current_team : teams << current_team
+
+        end
+
+        # Get the averages of each team
+        teams = teams.map do |team|
+            team[:average] = team[:goals].to_f / team[:number_of_games].to_f
+            team
+        end
+
+        # Return data
+        teams
+    end
+  
     def highest_scoring_visitor
         away_team = @game_teams.select { |game_team| game_team.home_or_away_game == "away" }
         highest_scoring = away_team.max_by { |game_team| game_team.goals.to_i }
 
         good_team = @teams.find { |team| team.team_id == highest_scoring.team_id }
         good_team.team_name
-    end  
+    end
 
     def highest_scoring_home_team
         home_team = @game_teams.select { |game_team| game_team.home_or_away_game == "home" }
@@ -145,7 +216,7 @@ class StatTracker
 
         bad_team = @teams.find { |team| team.team_id == lowest_scoring.team_id }
         bad_team.team_name
-    end 
+    end
 
     def lowest_scoring_home_team
         home_team = @game_teams.select { |game_team| game_team.home_or_away_game == "home" }
