@@ -1,5 +1,4 @@
 require 'csv'
-require 'pry'
 
 class StatTracker
     attr_reader :games,
@@ -78,7 +77,6 @@ class StatTracker
     end
 
     def percentage_home_wins
-
         total_home_wins = @games.count do |game|
             game.home_goals > game.away_goals
         end
@@ -87,7 +85,6 @@ class StatTracker
     end
 
     def percentage_visitor_wins
-
         total_home_wins = @games.count do |game|
             game.home_goals < game.away_goals
         end
@@ -111,12 +108,92 @@ class StatTracker
         season_counts
     end
 
+      def average_goals_per_game
+        @games.map! {|game| game.total_score}
+        (@games.sum.to_f / @games.size.to_f).round(2)
+    end
+
+    def average_goals_per_season
+        games_by_season = @games.group_by {|game| game.season}
+        games_by_season.each_value do |games|
+            games.map! do |game|
+                game.total_score
+            end
+        end
+        games_by_season.each do |season, game_total_score|
+            games_by_season[season] = (game_total_score.sum.to_f / game_total_score.size.to_f).round(2)
+        end
+    end
+  
     def count_of_teams
         @teams.map do |team|
             team.team_id
         end.uniq.count
     end
 
+    def best_offense
+        # Get sorted goals
+        teams = sort_goal_stats
+
+        best_offense_id = get_id_with_average(teams, :average, true)
+
+        best_team = @teams.find { |team| team.team_id == best_offense_id }
+        best_team.team_name
+    end
+
+    def worst_offense
+        # Get sorted goals
+        teams = sort_goal_stats
+
+        worst_offense_id = get_id_with_average(teams, :average, false)
+
+        worst_team = @teams.find { |team| team.team_id == worst_offense_id }
+        worst_team.team_name
+    end
+
+    # Gets id of team with min/max average from array sorted by sort_goal_stats
+    def get_id_with_average(array, key, max)
+        team = max ? array.max_by { |item| item[key] } : array.min_by { |item| item[key] }
+        team[:id]
+    end
+
+    def sort_goal_stats
+        teams = []
+
+        # Sort the data => {:id=>"3", :goals=>8, :number_of_games=>5, :average=>1.6}
+
+        @game_teams.each do |game_team|
+            team_id = game_team.team_id
+            goals = game_team.goals.to_i
+
+            if (team_id == nil)
+                next
+            end
+
+            # Find team with same ID if exists otherwise default object shape
+            current_team = teams.find { |team| team[:id] == team_id } || { id: team_id, goals: 0, number_of_games: 0 }
+
+            current_team[:goals] += goals
+            current_team[:number_of_games] += 1
+
+            # Find index of current_team in teams
+            current_team_index = teams.index { |team| team[:id] == team_id }
+
+            # Update existing team or append new team
+            current_team_index ? teams[current_team_index] = current_team : teams << current_team
+
+        end
+
+        # Get the averages of each team
+        teams = teams.map do |team|
+            team[:average] = team[:goals].to_f / team[:number_of_games].to_f
+            team
+        end
+
+        # Return data
+        teams
+    end
+  
     def highest_scoring_visitor
         away_team = @game_teams.select { |game_team| game_team.home_or_away_game == "away" }
         highest_scoring = away_team.max_by { |game_team| game_team.goals.to_i }
@@ -181,14 +258,17 @@ class StatTracker
         all_season_game_id = @games.map do |game|
             game.game_id if game.season == season_id
         end.compact
+
         team_id_goals_shots = @game_teams.each_with_object(Hash.new([0,0])) do |game, hash|
             if all_season_game_id.include?(game.game_id)
               hash[game.team_id] = [game.goals + hash[game.team_id][0], game.shots + hash[game.team_id][1]]
             end
         end
+
         avg_goals_made = team_id_goals_shots.transform_values do |value|
             (value[0] / value[1].to_f).round(3)
         end
+        
         team_name = avg_goals_made.key(avg_goals_made.values.max)
         name_team_list[team_name]
     end
@@ -197,104 +277,72 @@ class StatTracker
         all_season_game_id = @games.map do |game|
             game.game_id if game.season == season_id
         end.compact
+
         team_id_goals_shots = @game_teams.each_with_object(Hash.new([0,0])) do |game, hash|
             if all_season_game_id.include?(game.game_id)
               hash[game.team_id] = [game.goals + hash[game.team_id][0], game.shots + hash[game.team_id][1]]
             end
         end
+
         avg_goals_made = team_id_goals_shots.transform_values do |value|
             (value[0] / value[1].to_f).round(3)
         end
+
         team_name = avg_goals_made.key(avg_goals_made.values.min)
         name_team_list[team_name]
     end
 
-    def average_goals_per_game
-        @games.map! {|game| game.total_score}
-        (@games.sum.to_f / @games.size.to_f).round(2)
-    end
+    def most_tackles(season_id)
+        tackles_by_team_season = Hash.new(0)
 
-    def average_goals_per_season
-        games_by_season = @games.group_by {|game| game.season}
-        games_by_season.each_value do |games|
-            games.map! do |game|
-                game.total_score
-            end
+        games_by_season = []
+        @games.each do |game|
+            games_by_season << game.game_id if game.season == season_id
         end
-        games_by_season.each do |season, game_total_score|
-            games_by_season[season] = (game_total_score.sum.to_f / game_total_score.size.to_f).round(2)
-        end
-    end
 
-    def count_of_teams
-        @teams.map do |team|
-            team.team_id
-        end.uniq.count
-    end
-
-
-    def best_offense
-        # Get sorted goals
-        teams = sort_goal_stats
-
-        best_offense_id = get_id_with_average(teams, :average, true)
-
-        best_team = @teams.find { |team| team.team_id == best_offense_id }
-        best_team.team_name
-    end
-
-    def worst_offense
-        # Get sorted goals
-        teams = sort_goal_stats
-
-        worst_offense_id = get_id_with_average(teams, :average, false)
-
-        worst_team = @teams.find { |team| team.team_id == worst_offense_id }
-        worst_team.team_name
-    end
-
-    # Gets id of team with min/max average from array sorted by sort_goal_stats
-    def get_id_with_average(array, key, max)
-        team = max ? array.max_by { |item| item[key] } : array.min_by { |item| item[key] }
-        team[:id]
-    end
-
-    def sort_goal_stats
         teams = []
+        @game_teams.find_all do |game|
+            teams << game.team_id if games_by_season.include?(game.game_id)
+        end
 
-        # Sort the data => {:id=>"3", :goals=>8, :number_of_games=>5, :average=>1.6}
-
-        @game_teams.each do |game_team|
-            team_id = game_team.team_id
-            goals = game_team.goals.to_i
-
-            if (team_id == nil)
-                next
+        tackle_game = @game_teams.find_all { |game| games_by_season.include?(game.game_id) }
+        tackle_game.each do |game|
+            if tackles_by_team_season.key?(game.team_id)
+                tackles_by_team_season[game.team_id] += game.tackles.to_i
+            else
+                tackles_by_team_season[game.team_id] = game.tackles.to_i
             end
-
-            # Find team with same ID if exists otherwise default object shape
-            current_team = teams.find { |team| team[:id] == team_id } || { id: team_id, goals: 0, number_of_games: 0 }
-
-            current_team[:goals] += goals
-            current_team[:number_of_games] += 1
-
-            # Find index of current_team in teams
-            current_team_index = teams.index { |team| team[:id] == team_id }
-
-            # Update existing team or append new team
-            current_team_index ? teams[current_team_index] = current_team : teams << current_team
-
-        end
-        # binding.pry
-
-        # Get the averages of each team
-        teams = teams.map do |team|
-            team[:average] = team[:goals].to_f / team[:number_of_games].to_f
-            team
         end
 
-        # Return data
-        teams
+        most_tackles_id = tackles_by_team_season.max_by { |team_id, tackles| tackles }&.first
+        result = @teams.find { |team| team.team_id == most_tackles_id }
+        result.team_name
+    end 
+
+    def fewest_tackles(season_id)
+        tackles_by_team_season = Hash.new(0)
+
+        games_by_season = []
+        @games.each do |game|
+            games_by_season << game.game_id if game.season == season_id
+        end
+
+        teams = []
+        @game_teams.find_all do |game|
+            teams << game.team_id if games_by_season.include?(game.game_id)
+        end
+
+        tackle_game = @game_teams.find_all { |game| games_by_season.include?(game.game_id) }
+        tackle_game.each do |game|
+            if tackles_by_team_season.key?(game.team_id)
+                tackles_by_team_season[game.team_id] += game.tackles.to_i
+            else
+                tackles_by_team_season[game.team_id] = game.tackles.to_i
+            end
+        end
+
+        most_tackles_id = tackles_by_team_season.min_by { |team_id, tackles| tackles }&.first
+        result = @teams.find { |team| team.team_id == most_tackles_id }
+        result.team_name
     end
-
 end
